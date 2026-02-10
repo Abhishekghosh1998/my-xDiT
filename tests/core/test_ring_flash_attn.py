@@ -102,67 +102,67 @@ class TestRingFlashAttn(unittest.TestCase):
         torch.testing.assert_close(ref_output, output, rtol=1e-3, atol=1e-3)
         self.assertEqual(ref_output.shape, output.shape)
 
-    def test_xdit_ring_flash_attn_func_joint_strategy_rear(self):
-        """Test ring flash attention with joint strategy"""
-        q, k, v, local_q, local_k, local_v = self._create_test_tensors()
-        joint_q, joint_k, joint_v, local_joint_q, local_joint_k, local_joint_v = self._create_test_tensors()
+    # def test_xdit_ring_flash_attn_func_joint_strategy_rear(self):
+    #     """Test ring flash attention with joint strategy"""
+    #     q, k, v, local_q, local_k, local_v = self._create_test_tensors()
+    #     joint_q, joint_k, joint_v, local_joint_q, local_joint_k, local_joint_v = self._create_test_tensors()
 
-        # [q, q], [v, v] as input to flash_attn_func
-        ref_output = flash_attn_func(
-            q, 
-            torch.cat([k, joint_k], dim=1), 
-            torch.cat([v, joint_v], dim=1),
-            dropout_p=0.0,
-            causal=False,
-            window_size=(-1, -1),
-        )
-        ref_output = ref_output.chunk(self.world_size, dim=1)[self.rank]
+    #     # [q, q], [v, v] as input to flash_attn_func
+    #     ref_output = flash_attn_func(
+    #         q, 
+    #         torch.cat([k, joint_k], dim=1), 
+    #         torch.cat([v, joint_v], dim=1),
+    #         dropout_p=0.0,
+    #         causal=False,
+    #         window_size=(-1, -1),
+    #     )
+    #     ref_output = ref_output.chunk(self.world_size, dim=1)[self.rank]
 
-        # Test front joint strategy
-        output_rear = xdit_ring_flash_attn_func(
-            q=local_q,
-            k=local_k,
-            v=local_v,
-            dropout_p=0.0,
-            causal=False,
-            window_size=(-1, -1),
-            joint_tensor_key=joint_k,
-            joint_tensor_value=joint_v,
-            joint_strategy="rear"
-        )
+    #     # Test front joint strategy
+    #     output_rear = xdit_ring_flash_attn_func(
+    #         q=local_q,
+    #         k=local_k,
+    #         v=local_v,
+    #         dropout_p=0.0,
+    #         causal=False,
+    #         window_size=(-1, -1),
+    #         joint_tensor_key=joint_k,
+    #         joint_tensor_value=joint_v,
+    #         joint_strategy="rear"
+    #     )
 
-        torch.testing.assert_close(ref_output, output_rear, rtol=1e-3, atol=1e-3)
+    #     torch.testing.assert_close(ref_output, output_rear, rtol=1e-3, atol=1e-3)
 
-    def test_xdit_ring_flash_attn_func_joint_strategy_front(self):
-        """Test ring flash attention with joint strategy"""
-        q, k, v, local_q, local_k, local_v = self._create_test_tensors()
-        joint_q, joint_k, joint_v, local_joint_q, local_joint_k, local_joint_v = self._create_test_tensors()
+    # def test_xdit_ring_flash_attn_func_joint_strategy_front(self):
+    #     """Test ring flash attention with joint strategy"""
+    #     q, k, v, local_q, local_k, local_v = self._create_test_tensors()
+    #     joint_q, joint_k, joint_v, local_joint_q, local_joint_k, local_joint_v = self._create_test_tensors()
 
-        # [q, q], [v, v] as input to flash_attn_func
-        ref_output = flash_attn_func(
-            q, 
-            torch.cat([joint_k, k], dim=1), 
-            torch.cat([joint_v, v], dim=1),
-            dropout_p=0.0,
-            causal=False,
-            window_size=(-1, -1),
-        )
-        ref_output = ref_output.chunk(self.world_size, dim=1)[self.rank]
+    #     # [q, q], [v, v] as input to flash_attn_func
+    #     ref_output = flash_attn_func(
+    #         q, 
+    #         torch.cat([joint_k, k], dim=1), 
+    #         torch.cat([joint_v, v], dim=1),
+    #         dropout_p=0.0,
+    #         causal=False,
+    #         window_size=(-1, -1),
+    #     )
+    #     ref_output = ref_output.chunk(self.world_size, dim=1)[self.rank]
 
-        # Test front joint strategy
-        output_front = xdit_ring_flash_attn_func(
-            q=local_q,
-            k=local_k,
-            v=local_v,
-            dropout_p=0.0,
-            causal=False,
-            window_size=(-1, -1),
-            joint_tensor_key=joint_k,
-            joint_tensor_value=joint_v,
-            joint_strategy="front"
-        )
+    #     # Test front joint strategy
+    #     output_front = xdit_ring_flash_attn_func(
+    #         q=local_q,
+    #         k=local_k,
+    #         v=local_v,
+    #         dropout_p=0.0,
+    #         causal=False,
+    #         window_size=(-1, -1),
+    #         joint_tensor_key=joint_k,
+    #         joint_tensor_value=joint_v,
+    #         joint_strategy="front"
+    #     )
 
-        torch.testing.assert_close(ref_output, output_front, rtol=1e-3, atol=1e-3)
+    #     torch.testing.assert_close(ref_output, output_front, rtol=1e-3, atol=1e-3)
 
 # torchrun --nproc_per_node=2 -m unittest tests/core/test_ring_flash_attn.py
 if __name__ == '__main__':

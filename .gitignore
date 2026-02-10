@@ -10,3 +10,4 @@ profile/
 xfuser.egg-info/
 dist/*
 *.mp4
+*.nsys-rep
