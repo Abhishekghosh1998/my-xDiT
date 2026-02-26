@@ -172,10 +172,56 @@ pip install "xfuser[flash-attn]"  # With flash attention
 
 ### 2. Install from source
 
+1. Create a python virtual environment and activate it
 ```
+python3 -m venv xDiT-venv
+source ~/xDiT-venv/bin/activate 
+```
+2. Install build tools
+```
+pip install -U pip setuptools wheel packaging ninja
+```
+
+3. Install pytorch
+```
+pip3 install torch torchvision
+```
+
+4. Install Flash-attention 2
+```
+MAX_JOBS=16 pip install -v --no-build-isolation flash-attn
+```
+
+5. Install Flash-attention-3
+```
+git clone https://github.com/Dao-AILab/flash-attention
+cd flash-attention
+git checkout 72c7ba484d33ca43711897de44e5bb8e0589a7f4
+cd hopper
+export MAX_JOBS=16
+python3 setup.py install
+```
+
+6. Install yungchang
+```
+git clone git@github.com:Abhishekghosh1998/my-long-context-attention.git
+cd my-long-context-attention
+pip install .
+```
+7. Install xfuser
+```
+git clone git@github.com:Abhishekghosh1998/my-xDiT.git
+cd my-xDiT
 pip install -e .
-# Or optionally, with flash attention
-pip install -e ".[flash-attn]"
+```
+8. Fix the transformer version
+```
+pip uninstall -y transformers
+pip install "transformers>=4.39.1,<5"
+```
+9. Run benchmark
+```
+CUDA_VISIBLE_DEVICES=0,1 torchrun --standalone --nproc_per_node=2 tests/core/bench_xdit_ring_flash_attn.py   --S-list 8192 --B 2 --H 16 --D 128 --dtype fp16 --warmup 10 --iters 50 --check
 ```
 
 Note that we use two self-maintained packages:
