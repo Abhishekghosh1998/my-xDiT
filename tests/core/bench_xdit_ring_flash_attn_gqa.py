@@ -5,6 +5,8 @@
 #   --S-list 8192 --B 2 --Hq 16 --Hkv 8 --D 128 --dtype fp16 --warmup 10 --iters 50 --check --attn-type fa3
 
 import os
+import sys
+from pathlib import Path
 import argparse
 import torch
 import torch.distributed as dist
@@ -25,9 +27,29 @@ except Exception:
     AttnType = None
 
 
-def clean_print(msg: str, rank: int, print_once: bool = True) -> None:
+def setup_rank_logging(rank: int, log_dir: str | None) -> None:
+    """
+    If log_dir is set, redirect stdout/stderr of each rank to:
+      {log_dir}/rank_XX.log
+    """
+    if not log_dir:
+        return
+
+    p = Path(log_dir)
+    p.mkdir(parents=True, exist_ok=True)
+
+    log_file = p / f"rank_{rank:02d}.log"
+    f = open(log_file, "w", buffering=1, encoding="utf-8", errors="replace")
+
+    sys.stdout = f
+    sys.stderr = f
+
+    print(f"[rank {rank}] logging to {log_file}", flush=True)
+
+
+def clean_print(msg: str, rank: int, print_once: bool = False) -> None:
     if (not print_once) or rank == 0:
-        print(msg, flush=True)
+        print(f"[rank {rank}] {msg}", flush=True)
 
 
 def init_dist() -> tuple[int, int, int]:
@@ -274,10 +296,12 @@ def main():
     ap.add_argument("--profile-nvtx", action="store_true",
                     help="Insert NVTX ranges around iterations (use with nsys/ncu). Adds overhead; don't use for final timing."
                     )
+    ap.add_argument("--log-dir", type=str, default="", help="If set, redirect each rank's stdout/stderr to log-dir/rank_XX.log")
 
     args = ap.parse_args()
 
     rank, world_size, local_rank = init_dist()
+    setup_rank_logging(rank, args.log_dir)
     dtype = torch.bfloat16 if args.dtype == "bf16" else torch.float16
 
     # Safety checks
@@ -314,3 +338,18 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# when running with `--log-dir torchrun_logs` say, it creates logs as:
+# torchrun_logs/rank_00.log
+# torchrun_logs/rank_01.log
+# ...
+# Run the following bash command to combine them:
+# out="torchrun_logs/combined.log"
+# : > "$out" # : is shell no op command, create the combined file if it does not exit, or truncate if it exists
+# for r in $(seq 0 7); do
+#   {
+#     echo "===== RANK $r ====="
+#     cat "torchrun_logs/rank_$(printf "%02d" "$r").log"
+#     echo
+#   } >> "$out"
+# done
